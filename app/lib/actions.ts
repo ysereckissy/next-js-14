@@ -5,6 +5,7 @@ import {sql} from "@vercel/postgres";
 import {revalidatePath} from "next/cache";
 import {redirect} from "next/navigation";
 import exp from "constants";
+import {signIn} from "@/auth";
 
 const InvoiceSchema = z.object({
     id: z.string(),
@@ -82,12 +83,12 @@ export const updateInvoice = async (id: string, prevState: State, formData: Form
         WHERE id = ${id}
         `;
         revalidatePath('/dashboard/invoices');
-        redirect('/dashboard/invoices');
     } catch (error) {
         return {
             message: 'Database Error: Failed to Update Invoice',
         }
     }
+    redirect('/dashboard/invoices');
 }
 
 const DeleteInvoice = InvoiceSchema.pick({ id: true});
@@ -101,5 +102,19 @@ export const deleteInvoice = async (formData: FormData) => {
         return {
             message: 'Database Error: Failed to Delete Invoice.',
         }
+    }
+}
+
+export const authenticate = async (
+    prevSate: string | undefined,
+    formData: FormData,
+) => {
+    try {
+        await signIn('credentials', Object.fromEntries(formData));
+    } catch (error) {
+        if((error as Error).message.includes('CredentialsSignin')) {
+            return 'CredentialsSignin';
+        }
+        throw Error;
     }
 }
